@@ -1,45 +1,96 @@
 <template>
-  <div class="entry-title d-flex justify-content-between p-2">
-    <div>
-      <span class="text-success fs-3 fw-bold">15</span>
-      <span class="mx-1 fs-3">Julio</span>
-      <span class="mx-2 fs-4 fw-light">2022, sábado</span>
-    </div>
+    <template v-if="entry">
+        <div class="entry-title d-flex justify-content-between p-2">
+            <div>
+                <span class="text-success fs-3 fw-bold">{{ day }}</span>
+                <span class="mx-1 fs-3">{{ month }}</span>
+                <span class="mx-2 fs-4 fw-light">{{ yearDay }}</span>
+            </div>
 
-    <div>
-      <button class="btn btn-danger mx-2">
-        <i class="fa fa-trash-alt"></i>
-        Borrar
-      </button>
+            <div>
+                <button class="btn btn-danger mx-2">
+                    <i class="fa fa-trash-alt"></i>
+                    Borrar
+                </button>
 
-      <button class="btn btn-primary">
-        <i class="fa fa-upload"></i>
-        Subir foto
-      </button>
-    </div>
-  </div>
+                <button class="btn btn-primary">
+                    <i class="fa fa-upload"></i>
+                    Subir foto
+                </button>
+            </div>
+        </div>
 
-  <hr />
-  <div class="d-flex flex-column px-3 h-75">
-    <textarea placeholder="Qué sucedió hoy?" />
-  </div>
+        <hr />
+        <div class="d-flex flex-column px-3 h-75">
+            <textarea v-model="entry.text" placeholder="Qué sucedió hoy?" />
+        </div>
+    </template>
 
-  <Fab icon="fa-save" />
+    <Fab icon="fa-save" />
 
-  <img
-    src="https://pixabay.com/get/ga6496c17761658b0c6e7e35b590904e66e210455d25d70685936a223df8091d1aff72595d4bc5c46b306daa21917fc7ff0bfef809429f99f0458b0026759266e_640.png"
-    alt="entry-picture"
-    class="img-thumbnail"
-  />
+    <img
+        src="https://watermark.lovepik.com/photo/50107/5987.jpg_wh1200.jpg"
+        alt="entry-picture"
+        class="img-thumbnail"
+    />
 </template>
 
 <script>
 import { defineAsyncComponent } from "vue";
 
+import { mapGetters } from "vuex";
+
+import getDayMonthYear from "../helpers/getDayMonthYear";
+
 export default {
-  components: {
-    Fab: defineAsyncComponent(() => import("../components/Fab.vue")),
-  },
+    props: {
+        id: {
+            type: String,
+            required: true,
+        },
+    },
+    components: {
+        Fab: defineAsyncComponent(() => import("../components/Fab.vue")),
+    },
+    data() {
+        return {
+            entry: null,
+        };
+    },
+    methods: {
+        loadEntry() {
+            const entry = this.getEntryById(this.id);
+            if (!entry) {
+                this.$router.push({ name: "no-entry" });
+            }
+
+            this.entry = entry;
+        },
+    },
+    computed: {
+        day() {
+            const { day } = getDayMonthYear(this.entry.date);
+            return day;
+        },
+        month() {
+            const { month } = getDayMonthYear(this.entry.date);
+            return month;
+        },
+        yearDay() {
+            const { yearDay } = getDayMonthYear(this.entry.date);
+            return yearDay;
+        },
+        ...mapGetters("journal", ["getEntryById"]),
+    },
+    created() {
+        // console.log(this.id)
+        this.loadEntry();
+    },
+    watch: {
+        id() {
+            this.loadEntry();
+        },
+    },
 };
 </script>
 
