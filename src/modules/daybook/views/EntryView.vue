@@ -8,7 +8,9 @@
             </div>
 
             <div>
-                <button class="btn btn-danger mx-2">
+                <button v-if="entry.id"
+                    class="btn btn-danger mx-2"
+                    @click="onDeleteEntry">
                     <i class="fa fa-trash-alt"></i>
                     Borrar
                 </button>
@@ -26,7 +28,8 @@
         </div>
     </template>
 
-    <Fab icon="fa-save" />
+    <Fab icon="fa-save"
+        @on:click="saveEntry"/>
 
     <img
         src="https://watermark.lovepik.com/photo/50107/5987.jpg_wh1200.jpg"
@@ -38,7 +41,7 @@
 <script>
 import { defineAsyncComponent } from "vue";
 
-import { mapGetters } from "vuex";
+import { mapGetters, mapActions } from "vuex";
 
 import getDayMonthYear from "../helpers/getDayMonthYear";
 
@@ -59,13 +62,40 @@ export default {
     },
     methods: {
         loadEntry() {
-            const entry = this.getEntryById(this.id);
-            if (!entry) {
-                this.$router.push({ name: "no-entry" });
+            let entry
+
+            if (this.id === 'new') {
+                entry = {
+                    text: '',
+                    date: new Date().toDateString()
+                }
+            } else {
+                entry = this.getEntryById(this.id);
+                if (!entry) {
+                    this.$router.push({ name: "no-entry" });
+                }
             }
 
             this.entry = entry;
         },
+        async saveEntry() {
+            if (this.entry.id) {
+                // Actualizar entrada
+                await this.updateEntry(this.entry)
+            } else {
+                // Crear entrada
+                const { id } = await this.createEntry(this.entry)
+                //Redirigir
+                this.$router.push({ name: 'entry', params: { id }})
+            }
+        },
+        async onDeleteEntry() {
+            // Borrar entrada
+            await this.deleteEntry(this.entry.id)
+            // Redireccionar al usuario
+            this.$router.push({ name: 'no-entry' })
+        },
+        ...mapActions('journal', ['updateEntry', 'createEntry', 'deleteEntry'])
     },
     computed: {
         day() {
