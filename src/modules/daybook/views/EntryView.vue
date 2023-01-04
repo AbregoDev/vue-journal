@@ -8,6 +8,12 @@
             </div>
 
             <div>
+                <input type="file"
+                    @change="onSelectedImage"
+                    ref="imageSelector"
+                    v-show="false"
+                    accept="image/png, image/jpeg">
+
                 <button v-if="entry.id"
                     class="btn btn-danger mx-2"
                     @click="onDeleteEntry">
@@ -15,7 +21,8 @@
                     Borrar
                 </button>
 
-                <button class="btn btn-primary">
+                <button class="btn btn-primary"
+                    @click="onSelectImage">
                     <i class="fa fa-upload"></i>
                     Subir foto
                 </button>
@@ -31,8 +38,15 @@
     <Fab icon="fa-save"
         @on:click="saveEntry"/>
 
-    <img
+    <!-- <img
         src="https://watermark.lovepik.com/photo/50107/5987.jpg_wh1200.jpg"
+        alt="entry-picture"
+        class="img-thumbnail"
+    /> -->
+    
+    <img
+        v-if="localImage"
+        :src="localImage"
         alt="entry-picture"
         class="img-thumbnail"
     />
@@ -40,10 +54,11 @@
 
 <script>
 import { defineAsyncComponent } from "vue";
-
 import { mapGetters, mapActions } from "vuex";
 
 import getDayMonthYear from "../helpers/getDayMonthYear";
+
+import Swal from 'sweetalert2';
 
 export default {
     props: {
@@ -58,6 +73,8 @@ export default {
     data() {
         return {
             entry: null,
+            localImage: null,
+            file: null,
         };
     },
     methods: {
@@ -79,6 +96,12 @@ export default {
             this.entry = entry;
         },
         async saveEntry() {
+            new Swal({
+                title: 'Espere, por favor',
+                allowOutsideClick: false,
+            })
+            Swal.showLoading()
+
             if (this.entry.id) {
                 // Actualizar entrada
                 await this.updateEntry(this.entry)
@@ -88,12 +111,48 @@ export default {
                 //Redirigir
                 this.$router.push({ name: 'entry', params: { id }})
             }
+
+            Swal.fire('Guardado', 'Entrada registrada con éxito', 'success')
         },
         async onDeleteEntry() {
-            // Borrar entrada
-            await this.deleteEntry(this.entry.id)
-            // Redireccionar al usuario
-            this.$router.push({ name: 'no-entry' })
+            const { isConfirmed } = await Swal.fire({
+                title: '¿Está seguro?',
+                text: 'Está a punto de eliminar permanentemente la entrada',
+                showDenyButton: true,
+                confirmButtonText: 'Borrar',
+            })
+
+            if (isConfirmed) {
+                new Swal({
+                    title: 'Espere, por favor',
+                    allowOutsideClick: false,
+                })
+                Swal.showLoading()
+                // Borrar entrada
+                await this.deleteEntry(this.entry.id)
+                // Redireccionar al usuario
+                this.$router.push({ name: 'no-entry' })
+
+                Swal.fire('Eliminado', '', 'success')
+            }
+        },
+        onSelectedImage(event) {
+            const file = event.target.files[0]
+            console.log(file)
+            if (!file) {
+                this.localImage = null
+                this.file = null
+                return
+            }
+
+            this.file = file
+
+            const fr = new FileReader()
+            fr.onload = () => this.localImage = fr.result
+            fr.readAsDataURL( file )
+        },
+        onSelectImage() {
+            this.$refs.imageSelector.click()
         },
         ...mapActions('journal', ['updateEntry', 'createEntry', 'deleteEntry'])
     },
